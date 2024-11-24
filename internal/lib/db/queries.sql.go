@@ -7,7 +7,38 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const insertSongAndReturnId = `-- name: InsertSongAndReturnId :one
+INSERT INTO
+  song (title, artist, release_date, lyrics, link)
+VALUES
+  ($1, $2, $3, $4, $5)
+RETURNING id
+`
+
+type InsertSongAndReturnIdParams struct {
+	Title       string
+	Artist      string
+	ReleaseDate pgtype.Date
+	Lyrics      []string
+	Link        string
+}
+
+func (q *Queries) InsertSongAndReturnId(ctx context.Context, arg InsertSongAndReturnIdParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertSongAndReturnId,
+		arg.Title,
+		arg.Artist,
+		arg.ReleaseDate,
+		arg.Lyrics,
+		arg.Link,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
 
 const listSongs = `-- name: ListSongs :many
 SELECT id, title, artist, release_date, lyrics, link FROM song
