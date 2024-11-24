@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/x0k/effective-mobile-song-library-service/lib/logger"
+	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
 )
 
 const (

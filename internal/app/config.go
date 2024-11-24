@@ -15,14 +15,19 @@ type MusicInfoServiceConfig struct {
 	Address string `env:"MUSIC_INFO_SERVICE_ADDRESS" env-required:"true"`
 }
 
-type PostgresConfig struct {
-	ConnectionString string `env:"POSTGRES_CONNECTION_STRING" env-required:"true"`
+type PgConfig struct {
+	ConnectionURI string `env:"PG_CONNECTION_URI" env-required:"true"`
+}
+
+type ServerConfig struct {
+	Address string `env:"SERVER_ADDRESS" env-default:"0.0.0.0:8080"`
 }
 
 type Config struct {
 	Logger           LoggerConfig
 	MusicInfoService MusicInfoServiceConfig
-	Postgres         PostgresConfig
+	Postgres         PgConfig
+	Server           ServerConfig
 }
 
 func mustLoadConfig() *Config {

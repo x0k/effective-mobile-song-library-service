@@ -5,16 +5,15 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/golang-migrate/migrate/v4/source"
-	"github.com/x0k/effective-mobile-song-library-service/lib/logger/sl"
+	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger/sl"
 )
 
-func Run(sourceName string, migrations source.Driver) {
+func Run() {
 	cfg := mustLoadConfig()
 	log := mustNewLogger(&cfg.Logger)
 	ctx := context.Background()
 	log.Info(ctx, "starting app", slog.String("log_level", cfg.Logger.Level))
-	root, err := newRoot(cfg, log, sourceName, migrations)
+	root, err := newRoot(cfg, log)
 	if err != nil {
 		log.Error(ctx, "failed to initialize app", sl.Err(err))
 		os.Exit(1)

@@ -23,6 +23,7 @@
             pkgs.go-migrate
             pkgs.golangci-lint
             pkgs.sqlc
+            pkgs.oapi-codegen
           ];
           shellHook = ''
             source <(COMPLETE=bash mk)
