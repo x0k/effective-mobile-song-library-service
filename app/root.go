@@ -7,11 +7,17 @@ import (
 	pgx_storage "github.com/x0k/effective-mobile-song-library-service/storage/pgx"
 )
 
-func newRoot(cfg *Config, log *logger.Logger, migrations source.Driver) (*module.Root, error) {
+func newRoot(
+	cfg *Config,
+	log *logger.Logger,
+	sourceName string,
+	migrations source.Driver,
+) (*module.Root, error) {
 	m := module.NewRoot(log.Logger)
 
 	storage := pgx_storage.New(
 		cfg.Postgres.ConnectionString,
+		sourceName,
 		migrations,
 	)
 	m.PreStartFn("storage_open", storage.Open)

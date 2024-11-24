@@ -9,12 +9,12 @@ import (
 	"github.com/x0k/effective-mobile-song-library-service/lib/logger/sl"
 )
 
-func Run(migrations source.Driver) {
+func Run(sourceName string, migrations source.Driver) {
 	cfg := mustLoadConfig()
 	log := mustNewLogger(&cfg.Logger)
 	ctx := context.Background()
 	log.Info(ctx, "starting app", slog.String("log_level", cfg.Logger.Level))
-	root, err := newRoot(cfg, log, migrations)
+	root, err := newRoot(cfg, log, sourceName, migrations)
 	if err != nil {
 		log.Error(ctx, "failed to initialize app", sl.Err(err))
 		os.Exit(1)

@@ -12,5 +12,5 @@ var migrations embed.FS
 
 func main() {
 	source, _ := iofs.New(migrations, "db/migrations")
-	app.Run(source)
+	app.Run("iofs", source)
 }
