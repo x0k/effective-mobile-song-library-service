@@ -9,12 +9,22 @@ type Hook interface {
 	Run(ctx context.Context) error
 }
 
+type PreStarter interface {
+	PreStart(hooks ...Hook)
+	PreStartFn(name string, run func(ctx context.Context) error)
+}
+
+type PostStarter interface {
+	PostStart(hooks ...Hook)
+}
+
 type PreStopper interface {
 	PreStop(hooks ...Hook)
 }
 
 type PostStopper interface {
 	PostStop(hooks ...Hook)
+	PostStopFn(name string, run func(ctx context.Context) error)
 }
 
 type hook struct {

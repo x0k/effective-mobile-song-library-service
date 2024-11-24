@@ -2,6 +2,7 @@ package app
 
 import (
 	"log"
+	"os"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -17,6 +18,7 @@ type MusicInfoServiceConfig struct {
 
 type PgConfig struct {
 	ConnectionURI string `env:"PG_CONNECTION_URI" env-required:"true"`
+	MigrationsURI string `env:"PG_MIGRATIONS_URI" env-default:"file://db/migrations"`
 }
 
 type ServerConfig struct {
@@ -30,10 +32,18 @@ type Config struct {
 	Server           ServerConfig
 }
 
-func mustLoadConfig() *Config {
+func mustLoadConfig(configPath string) *Config {
 	cfg := &Config{}
-	if err := cleanenv.ReadEnv(cfg); err != nil {
-		log.Fatalf("can't load config: %s", err)
+	var cfgErr error
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		cfgErr = cleanenv.ReadEnv(cfg)
+	} else if err == nil {
+		cfgErr = cleanenv.ReadConfig(configPath, cfg)
+	} else {
+		cfgErr = err
+	}
+	if cfgErr != nil {
+		log.Fatalf("cannot read config: %s", cfgErr)
 	}
 	return cfg
 }

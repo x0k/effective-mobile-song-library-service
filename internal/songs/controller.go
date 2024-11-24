@@ -1,4 +1,4 @@
-package songs_controller
+package songs
 
 import (
 	"context"
@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/x0k/effective-mobile-song-library-service/internal/entities"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/httpx"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
 )
 
-type SongCreator = func(ctx context.Context, song string, group string) (entities.Song, error)
+type SongCreator = func(ctx context.Context, song string, group string) (Song, error)
 
 type Controller struct {
 	log         *logger.Logger
@@ -19,7 +18,7 @@ type Controller struct {
 	songCreator SongCreator
 }
 
-func New(
+func newController(
 	log *logger.Logger,
 	songCreator SongCreator,
 ) *Controller {

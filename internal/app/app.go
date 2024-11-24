@@ -8,8 +8,8 @@ import (
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger/sl"
 )
 
-func Run() {
-	cfg := mustLoadConfig()
+func Run(configPath string) {
+	cfg := mustLoadConfig(configPath)
 	log := mustNewLogger(&cfg.Logger)
 	ctx := context.Background()
 	log.Info(ctx, "starting app", slog.String("log_level", cfg.Logger.Level))

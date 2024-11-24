@@ -1,4 +1,4 @@
-package entities
+package songs
 
 import "time"
 

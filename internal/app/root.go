@@ -2,50 +2,39 @@ package app
 
 import (
 	"log/slog"
-	"net/http"
 
-	http_adapters "github.com/x0k/effective-mobile-song-library-service/internal/adapters/http"
-	songs_controller "github.com/x0k/effective-mobile-song-library-service/internal/controllers/http/songs"
+	pgx_adapter "github.com/x0k/effective-mobile-song-library-service/internal/adapters/pgx"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/module"
-	"github.com/x0k/effective-mobile-song-library-service/internal/lib/music_info"
-	songs_service "github.com/x0k/effective-mobile-song-library-service/internal/services/songs"
-	db_storage "github.com/x0k/effective-mobile-song-library-service/internal/storage/db"
+	"github.com/x0k/effective-mobile-song-library-service/internal/songs"
 )
 
 func newRoot(
 	cfg *Config,
 	log *logger.Logger,
-) (*module.Root, error) {
-	m := module.NewRoot(log.Logger)
-
-	storage := db_storage.New(
-		log.With(slog.String("component", "storage")),
-		cfg.Postgres.ConnectionURI,
+) (module.Interface, error) {
+	m := module.NewRoot(
+		log.Logger.With(slog.String("module", "root")),
 	)
-	m.PreStartFn("storage_open", storage.Open)
-	m.PostStopFn("storage_close", storage.Close)
 
-	musicInfoClient, err := music_info.NewClientWithResponses(cfg.MusicInfoService.Address)
+	m.PreStart(pgx_adapter.NewMigrator(
+		"pgx_migrate",
+		log.Logger.With(slog.String("component", "pgx_migrate")),
+		cfg.Postgres.ConnectionURI,
+		cfg.Postgres.MigrationsURI,
+	))
+
+	pgx := pgx_adapter.NewPgx(m, cfg.Postgres.ConnectionURI)
+
+	songsModule, err := songs.New(
+		log,
+		pgx,
+		cfg.Server.Address,
+		cfg.MusicInfoService.Address,
+	)
 	if err != nil {
 		return nil, err
 	}
-	songsService := songs_service.New(
-		storage,
-		musicInfoClient,
-	)
-	songsController := songs_controller.New(
-		log.With(slog.String("component", "songs_controller")),
-		songsService.CreateSong,
-	)
-	srv := &http.Server{
-		Addr: cfg.Server.Address,
-		Handler: http_adapters.Logging(
-			log.With(slog.String("component", "http_router")),
-			newRouter(songsController),
-		),
-	}
-	m.Append(http_adapters.NewService("http_server", srv, m))
-
+	m.Append(songsModule)
 	return m, nil
 }

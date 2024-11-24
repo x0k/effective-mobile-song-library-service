@@ -2,7 +2,7 @@
 set -xe
 
 d:
-  go run main.go
+  go run cmd/app/main.go
 
 db:
   sqlc generate
@@ -13,3 +13,10 @@ migration:
 client:
   mkdir -p lib/music_info
   oapi-codegen --config=oapi-codegen.yaml api/music-info.yaml > internal/lib/music_info/client.go
+
+
+t:
+  go test ./...
+
+lint:
+  golangci-lint run ./...

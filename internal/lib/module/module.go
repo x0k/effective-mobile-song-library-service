@@ -8,6 +8,15 @@ import (
 	"log/slog"
 )
 
+type Interface interface {
+	Fataler
+	PreStarter
+	PostStarter
+	PreStopper
+	PostStopper
+	Service
+}
+
 type Module struct {
 	name      string
 	log       *slog.Logger
@@ -83,6 +92,15 @@ func (m *Module) awaiter(ctx context.Context) error {
 	}
 }
 
+func (m *Module) hooks(ctx context.Context, hooks []Hook, msg string) {
+	for _, hook := range hooks {
+		m.log.LogAttrs(ctx, slog.LevelInfo, msg, slog.String("hook", hook.Name()))
+		if err := hook.Run(ctx); err != nil {
+			m.Fatal(ctx, err)
+		}
+	}
+}
+
 func (m *Module) start(ctx context.Context, awaiter func(context.Context) error) error {
 	if len(m.services) == 0 && len(m.postStart) == 0 && len(m.preStop) == 0 {
 		return nil
@@ -95,12 +113,7 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for _, hook := range m.preStart {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run pre start", slog.String("hook", hook.Name()))
-		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
-		}
-	}
+	m.hooks(ctx, m.preStart, "run pre start")
 
 	for _, service := range m.services {
 		m.wg.Add(1)
@@ -114,32 +127,17 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 		}()
 	}
 
-	for _, hook := range m.postStart {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run post start", slog.String("hook", hook.Name()))
-		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
-		}
-	}
+	m.hooks(ctx, m.postStart, "run post start")
 
 	err := awaiter(ctx)
 
-	for _, hook := range m.preStop {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run pre stop", slog.String("hook", hook.Name()))
-		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
-		}
-	}
+	m.hooks(ctx, m.preStop, "run pre stop")
 
 	m.log.LogAttrs(ctx, slog.LevelInfo, "stopping")
 	m.stopped.Store(true)
 	cancel()
 
-	for _, hook := range m.postStop {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run post stop", slog.String("hook", hook.Name()))
-		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
-		}
-	}
+	m.hooks(ctx, m.postStop, "run post stop")
 
 	m.wg.Wait()
 
