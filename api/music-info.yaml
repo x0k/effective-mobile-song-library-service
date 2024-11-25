@@ -11,11 +11,17 @@ paths:
           required: true
           schema:
             type: string
+          examples:
+            basic:
+              value: Muse
         - name: song
           in: query
           required: true
           schema:
             type: string
+          examples:
+            basic:
+              value: Supermassive Black Hole
       responses:
         '200':
           description: Ok

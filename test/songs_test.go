@@ -14,8 +14,8 @@ func TestSongs(t *testing.T) {
 	e := httpexpect.Default(t, appAddress)
 	e.POST("/songs").
 		WithJSON(map[string]string{
-			"song":  "song",
-			"group": "group",
+			"song":  "Supermassive Black Hole",
+			"group": "Muse",
 		}).
 		Expect().
 		Status(http.StatusCreated)
