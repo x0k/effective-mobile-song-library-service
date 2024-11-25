@@ -39,6 +39,9 @@ func (s *SongsService) CreateSong(ctx context.Context, title string, artist stri
 	if err != nil {
 		return Song{}, fmt.Errorf("%w: %v", ErrFailedToGetInfo, err)
 	}
+	if r.JSON200 == nil {
+		return Song{}, fmt.Errorf("%w: no response", ErrFailedToGetInfo)
+	}
 	lyrics := strings.Split(r.JSON200.Text, "\n\n")
 	releaseDate, err := time.Parse("02.01.2006", r.JSON200.ReleaseDate)
 	if err != nil {

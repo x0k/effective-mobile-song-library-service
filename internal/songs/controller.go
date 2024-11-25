@@ -8,6 +8,7 @@ import (
 
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/httpx"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
+	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger/sl"
 )
 
 type SongCreator = func(ctx context.Context, song string, group string) (Song, error)
@@ -52,15 +53,18 @@ func (c *Controller) CreateSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(strings.TrimSpace(createSong.Group)) == 0 {
+		c.log.Debug(r.Context(), "group is empty")
 		http.Error(w, "group is required", http.StatusBadRequest)
 		return
 	}
 	if len(strings.TrimSpace(createSong.Song)) == 0 {
+		c.log.Debug(r.Context(), "song is empty")
 		http.Error(w, "song is required", http.StatusBadRequest)
 		return
 	}
 	song, err := c.songCreator(r.Context(), createSong.Song, createSong.Group)
 	if err != nil {
+		c.log.Debug(r.Context(), "failed to create song", sl.Err(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -75,6 +79,7 @@ func (c *Controller) CreateSong(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err = json.NewEncoder(w).Encode(response); err != nil {
+		c.log.Debug(r.Context(), "failed to encode JSON", sl.Err(err))
 		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
 		return
 	}

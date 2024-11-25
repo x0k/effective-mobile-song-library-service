@@ -1,0 +1,8 @@
+.direnv/
+test/
+api/
+
+.env
+.envrc
+.flake.*
+mkfile
