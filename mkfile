@@ -12,7 +12,7 @@ migration:
 
 client:
   mkdir -p lib/music_info
-  oapi-codegen --config=oapi-codegen.yaml api/music-info.yaml > internal/lib/music_info/client.go
+  oapi-codegen --config=oapi-codegen.yml api/music-info.yml > internal/lib/music_info/client.go
 
 t:
   go test ./...

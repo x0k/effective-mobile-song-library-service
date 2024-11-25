@@ -53,7 +53,7 @@ func setupApp(
 		ctx,
 		"quay.io/microcks/microcks-uber:1.10.1",
 		network.WithNetwork([]string{"music-info"}, nw),
-		microcks.WithArtifact("../api/music-info.yaml", true),
+		microcks.WithArtifact("../api/music-info.yml", true),
 	)
 	if err != nil {
 		t.Fatal(err)

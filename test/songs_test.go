@@ -18,5 +18,16 @@ func TestSongs(t *testing.T) {
 			"group": "Muse",
 		}).
 		Expect().
-		Status(http.StatusCreated)
+		Status(http.StatusCreated).
+		JSON().IsEqual(map[string]any{
+		"id":          1,
+		"group":       "Muse",
+		"song":        "Supermassive Black Hole",
+		"releaseDate": "16.07.2006",
+		"text": []string{
+			"Ooh baby, don't you know I suffer?\nOoh baby, can you hear me moan?\nYou caught me under false pretenses\nHow long before you let me go?",
+			"Ooh\nYou set my soul alight\nOoh\nYou set my soul alight",
+		},
+		"link": "https://www.youtube.com/watch?v=Xsp3_a-PMTw",
+	})
 }
