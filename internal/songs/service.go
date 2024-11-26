@@ -24,7 +24,7 @@ type songsService struct {
 	songsRepo SongsRepo
 }
 
-func NewService(
+func newService(
 	musicInfo music_info.ClientWithResponsesInterface,
 	songsRepo SongsRepo,
 ) *songsService {

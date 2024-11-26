@@ -14,18 +14,13 @@ import (
 	pgx_adapter "github.com/x0k/effective-mobile-song-library-service/internal/adapters/pgx"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger/sl"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/music_info"
+	"github.com/x0k/effective-mobile-song-library-service/internal/songs"
 )
 
 func Run(configPath string) {
 	cfg := mustLoadConfig(configPath)
 	log := mustNewLogger(&cfg.Logger)
 	ctx := context.Background()
-
-	musicInfoClient, err := music_info.NewClientWithResponses(cfg.MusicInfoService.Address)
-	if err != nil {
-		log.Error(ctx, "cannot create music info client", sl.Err(err))
-		os.Exit(1)
-	}
 
 	if err := pgx_adapter.Migrate(
 		ctx,
@@ -44,7 +39,13 @@ func Run(configPath string) {
 	}
 	defer pgx.Close(ctx)
 
-	router := newRouter(
+	musicInfoClient, err := music_info.NewClientWithResponses(cfg.MusicInfoService.Address)
+	if err != nil {
+		log.Error(ctx, "cannot create music info client", sl.Err(err))
+		os.Exit(1)
+	}
+
+	router := songs.New(
 		log,
 		pgx,
 		musicInfoClient,

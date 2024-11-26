@@ -9,7 +9,7 @@ type SongsController interface {
 	CreateSong(w http.ResponseWriter, r *http.Request)
 }
 
-func NewRouter(
+func newRouter(
 	songsController SongsController,
 ) *http.ServeMux {
 	mux := http.NewServeMux()

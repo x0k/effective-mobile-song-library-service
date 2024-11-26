@@ -1,4 +1,4 @@
-package app
+package songs
 
 import (
 	"log/slog"
@@ -7,28 +7,27 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/music_info"
-	"github.com/x0k/effective-mobile-song-library-service/internal/songs"
 )
 
-func newRouter(
+func New(
 	log *logger.Logger,
 	pgx *pgx.Conn,
 	musicInfoClient music_info.ClientWithResponsesInterface,
 ) http.Handler {
-	songsRepo := songs.NewRepo(
+	songsRepo := newRepo(
 		log.With(slog.String("component", "songs_repo")),
 		pgx,
 	)
 
-	songsService := songs.NewService(
+	songsService := newService(
 		musicInfoClient,
 		songsRepo,
 	)
 
-	songsController := songs.NewController(
+	songsController := newController(
 		log.With(slog.String("component", "songs_controller")),
 		songsService,
 	)
 
-	return songs.NewRouter(songsController)
+	return newRouter(songsController)
 }

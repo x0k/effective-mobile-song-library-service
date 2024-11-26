@@ -29,7 +29,7 @@ type songsController struct {
 	songsService SongsService
 }
 
-func NewController(
+func newController(
 	log *logger.Logger,
 	songsRepo SongsService,
 ) *songsController {
@@ -109,7 +109,7 @@ func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 	if pageSize, err := c.parseUint(rq, "pageSize", 64); err != nil {
 		c.badRequest(w, r, err)
 		return
-	} else if pageSize < sq.PageSize {
+	} else if pageSize > 0 && pageSize < sq.PageSize {
 		sq.PageSize = pageSize
 	}
 	if lastId, err := c.parseUint(rq, "lastId", 63); err != nil {

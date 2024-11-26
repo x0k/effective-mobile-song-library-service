@@ -21,7 +21,7 @@ type Repo struct {
 	filter  *filter.Filter
 }
 
-func NewRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
+func newRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
 	return &Repo{
 		log:     log,
 		conn:    conn,
@@ -85,11 +85,16 @@ func (s *Repo) GetSongs(ctx context.Context, query Query) ([]Song, error) {
 		args = expr.ToSQL(&q, args)
 	}
 	q.WriteString(" ORDER BY id ASC")
+	if query.Page > 0 {
+		q.WriteString(" OFFSET $")
+		args = append(args, (query.Page-1)*query.PageSize)
+		q.WriteString(strconv.Itoa(len(args)))
+	}
 	q.WriteString(" LIMIT $")
 	args = append(args, query.PageSize)
 	q.WriteString(strconv.Itoa(len(args)))
 	sql := q.String()
-	s.log.Debug(ctx, "executing query", slog.String("query", sql))
+	s.log.Debug(ctx, "executing query", slog.String("query", sql), slog.Any("args", args))
 	rows, err := s.conn.Query(ctx, q.String(), args...)
 	if err != nil {
 		return nil, err
@@ -102,8 +107,9 @@ func (s *Repo) GetSongs(ctx context.Context, query Query) ([]Song, error) {
 		if err := rows.Scan(&s.ID, &s.Title, &s.Artist, &d, &s.Lyrics, &s.Link); err != nil {
 			return nil, err
 		}
-		s.ReleaseDate = d.Time
+		s.ReleaseDate = d.Time.In(time.Local)
 		songs = append(songs, s)
 	}
+	s.log.Debug(ctx, "got songs", slog.Int("count", len(songs)))
 	return songs, nil
 }

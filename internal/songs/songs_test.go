@@ -1,17 +1,32 @@
-package test
+package songs_test
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
+	"github.com/x0k/effective-mobile-song-library-service/internal/songs"
+	"github.com/x0k/effective-mobile-song-library-service/internal/testutils"
 )
 
 func TestSongs(t *testing.T) {
 	ctx := context.Background()
-	appAddress := setupApp(ctx, t)
-	e := httpexpect.Default(t, appAddress)
+	var buf bytes.Buffer
+	log := logger.New(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	pgx := testutils.SetupPgx(ctx, log.Logger, t)
+	musicInfoClient := testutils.SetupMusicInfoClient(ctx, t)
+
+	router := songs.New(log, pgx, musicInfoClient)
+
+	server := httptest.NewServer(router)
+	defer server.Close()
+
+	e := httpexpect.Default(t, server.URL)
 	e.POST("/songs").
 		WithJSON(map[string]string{
 			"song":  "Supermassive Black Hole",
