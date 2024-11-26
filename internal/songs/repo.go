@@ -125,3 +125,11 @@ func (s *Repo) GetLyrics(ctx context.Context, id int64, pagination Pagination) (
 	s.log.Debug(ctx, "got lyrics", slog.Int("count", len(lyrics)))
 	return lyrics, err
 }
+
+const deleteSongQuery = `DELETE FROM song WHERE id = $1`
+
+func (s *Repo) DeleteSong(ctx context.Context, id int64) error {
+	s.log.Debug(ctx, "executing query", slog.String("query", deleteSongQuery), slog.Int64("id", id))
+	_, err := s.conn.Exec(ctx, deleteSongQuery, id)
+	return err
+}

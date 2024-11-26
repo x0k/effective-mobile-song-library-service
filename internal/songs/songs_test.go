@@ -72,4 +72,8 @@ func TestSongs(t *testing.T) {
 		JSON().IsEqual([]string{
 		"Ooh\nYou set my soul alight\nOoh\nYou set my soul alight",
 	})
+
+	e.DELETE("/songs/1").
+		Expect().
+		Status(http.StatusNoContent)
 }

@@ -23,6 +23,7 @@ type SongsService interface {
 	CreateSong(ctx context.Context, song string, group string) (Song, error)
 	GetSongs(ctx context.Context, query Query) ([]Song, error)
 	GetLyrics(ctx context.Context, id int64, pagination Pagination) ([]string, error)
+	DeleteSong(ctx context.Context, id int64) error
 }
 
 type songsController struct {
@@ -139,14 +140,9 @@ func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *songsController) GetLyrics(w http.ResponseWriter, r *http.Request) {
-	songIdStr := r.PathValue("songId")
-	if songIdStr == "" {
-		c.badRequest(w, r, ErrInvalidSongId)
-		return
-	}
-	songId, err := strconv.ParseInt(songIdStr, 10, 64)
+	songId, err := c.parseSongId(r)
 	if err != nil {
-		c.badRequest(w, r, ErrInvalidSongId)
+		c.badRequest(w, r, err)
 		return
 	}
 	Pagination := Pagination{
@@ -163,6 +159,32 @@ func (c *songsController) GetLyrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.json(w, r, lyrics, http.StatusOK)
+}
+
+func (c *songsController) DeleteSong(w http.ResponseWriter, r *http.Request) {
+	songId, err := c.parseSongId(r)
+	if err != nil {
+		c.badRequest(w, r, err)
+		return
+	}
+	if err := c.songsService.DeleteSong(r.Context(), songId); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.log.Debug(r.Context(), "failed to delete song", sl.Err(err))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *songsController) parseSongId(r *http.Request) (int64, error) {
+	songIdStr := r.PathValue("songId")
+	if songIdStr == "" {
+		return 0, ErrInvalidSongId
+	}
+	songId, err := strconv.ParseInt(songIdStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %v", ErrInvalidSongId, err)
+	}
+	return songId, nil
 }
 
 func (c *songsController) parsePagination(p *Pagination, rq url.Values) error {
