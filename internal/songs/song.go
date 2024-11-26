@@ -42,3 +42,15 @@ type Query struct {
 	LastId int64
 	Filter string
 }
+
+type SongField string
+
+const (
+	Title       SongField = "song"
+	Artist      SongField = "group"
+	ReleaseDate SongField = "releaseDate"
+	Lyrics      SongField = "text"
+	Link        SongField = "link"
+)
+
+type SongUpdate map[SongField]any

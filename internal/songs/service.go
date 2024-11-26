@@ -19,6 +19,7 @@ type SongsRepo interface {
 	GetSongs(ctx context.Context, query Query) ([]Song, error)
 	GetLyrics(ctx context.Context, id int64, pagination Pagination) ([]string, error)
 	DeleteSong(ctx context.Context, id int64) error
+	UpdateSong(ctx context.Context, id int64, upd SongUpdate) error
 }
 
 type songsService struct {
@@ -75,4 +76,8 @@ func (s *songsService) GetLyrics(ctx context.Context, id int64, pagination Pagin
 
 func (s *songsService) DeleteSong(ctx context.Context, id int64) error {
 	return s.songsRepo.DeleteSong(ctx, id)
+}
+
+func (s *songsService) UpdateSong(ctx context.Context, id int64, upd SongUpdate) error {
+	return s.songsRepo.UpdateSong(ctx, id, upd)
 }

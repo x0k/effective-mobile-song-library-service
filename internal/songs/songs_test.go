@@ -47,7 +47,7 @@ func TestSongs(t *testing.T) {
 	})
 
 	e.GET("/songs").
-		WithQuery("filter", `AND(EQ(artist, "Muse"), ALIKE(lyrics, "%can you hear me%"))`).
+		WithQuery("filter", `AND(EQ(artist, "Muse"), ALIKE(lyrics, "%can you hear me%"), EQ(release_date, DATE("16.07.2006")))`).
 		Expect().
 		Status(http.StatusOK).
 		JSON().IsEqual([]map[string]any{
@@ -71,6 +71,32 @@ func TestSongs(t *testing.T) {
 		Status(http.StatusOK).
 		JSON().IsEqual([]string{
 		"Ooh\nYou set my soul alight\nOoh\nYou set my soul alight",
+	})
+
+	e.PATCH("/songs/1").
+		WithJSON(map[string]any{
+			"group":       "group",
+			"song":        "song",
+			"releaseDate": "08.08.2008",
+			"text":        []string{"text1", "text2"},
+			"link":        "link",
+		}).
+		Expect().
+		Status(http.StatusNoContent)
+
+	e.GET("/songs").
+		WithQuery("filter", `EQ(id, 1)`).
+		Expect().
+		Status(http.StatusOK).
+		JSON().IsEqual([]map[string]any{
+		{
+			"id":          1,
+			"group":       "group",
+			"song":        "song",
+			"releaseDate": "08.08.2008",
+			"text":        []string{"text1", "text2"},
+			"link":        "link",
+		},
 	})
 
 	e.DELETE("/songs/1").

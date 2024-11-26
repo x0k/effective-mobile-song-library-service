@@ -26,12 +26,12 @@ func newRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
 		filter: filter.New(
 			"song",
 			map[string]filter.ValueType{
-				"id":          filter.NumberType,
-				"title":       filter.StringType,
-				"artist":      filter.StringType,
-				"releaseDate": filter.DateType,
-				"lyrics":      filter.ArrayOf(filter.StringType),
-				"link":        filter.StringType,
+				"id":           filter.NumberType,
+				"title":        filter.StringType,
+				"artist":       filter.StringType,
+				"release_date": filter.DateType,
+				"lyrics":       filter.ArrayOf(filter.StringType),
+				"link":         filter.StringType,
 			},
 			func(s string) (any, error) {
 				d, err := time.Parse(releaseDateFormat, s)
@@ -122,5 +122,41 @@ const deleteSongQuery = `DELETE FROM song WHERE id = $1`
 func (s *Repo) DeleteSong(ctx context.Context, id int64) error {
 	s.log.Debug(ctx, "executing query", slog.String("query", deleteSongQuery), slog.Int64("id", id))
 	_, err := s.conn.Exec(ctx, deleteSongQuery, id)
+	return err
+}
+
+var songFieldToColumn = map[SongField]string{
+	Title:       "title",
+	Artist:      "artist",
+	ReleaseDate: "release_date",
+	Lyrics:      "lyrics",
+	Link:        "link",
+}
+
+func (s *Repo) UpdateSong(ctx context.Context, id int64, upd SongUpdate) error {
+	q := strings.Builder{}
+	q.Grow(100)
+	q.WriteString("UPDATE song SET ")
+	i := 0
+	var args []any
+	for f, v := range upd {
+		if i > 0 {
+			q.WriteString(", ")
+		}
+		i++
+		q.WriteString(songFieldToColumn[f])
+		q.WriteString(" = $")
+		if f == ReleaseDate {
+			args = append(args, pgtype.Date{Time: v.(time.Time), Valid: true})
+		} else {
+			args = append(args, v)
+		}
+		q.WriteString(strconv.Itoa(len(args)))
+	}
+	q.WriteString(" WHERE id = $")
+	args = append(args, id)
+	q.WriteString(strconv.Itoa(len(args)))
+	s.log.Debug(ctx, "executing query", slog.String("query", q.String()), slog.Any("args", args))
+	_, err := s.conn.Exec(ctx, q.String(), args...)
 	return err
 }

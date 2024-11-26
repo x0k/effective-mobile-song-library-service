@@ -9,6 +9,7 @@ type SongsController interface {
 	CreateSong(w http.ResponseWriter, r *http.Request)
 	GetLyrics(w http.ResponseWriter, r *http.Request)
 	DeleteSong(w http.ResponseWriter, r *http.Request)
+	UpdateSong(w http.ResponseWriter, r *http.Request)
 }
 
 func newRouter(
@@ -19,5 +20,6 @@ func newRouter(
 	mux.HandleFunc("GET /songs", songsController.GetSongs)
 	mux.HandleFunc("GET /songs/{songId}/lyrics", songsController.GetLyrics)
 	mux.HandleFunc("DELETE /songs/{songId}", songsController.DeleteSong)
+	mux.HandleFunc("PATCH /songs/{songId}", songsController.UpdateSong)
 	return mux
 }

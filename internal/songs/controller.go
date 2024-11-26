@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/httpx"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
@@ -18,12 +19,15 @@ import (
 var ErrLastIdCannotBeUsedWithPageParameter = errors.New("last id cannot be used with page parameter")
 var ErrFilterIsTooLong = errors.New("filter is too complex")
 var ErrInvalidSongId = errors.New("invalid song id")
+var ErrInvalidDate = errors.New("invalid date")
+var ErrNothingToUpdate = errors.New("nothing to update")
 
 type SongsService interface {
 	CreateSong(ctx context.Context, song string, group string) (Song, error)
 	GetSongs(ctx context.Context, query Query) ([]Song, error)
 	GetLyrics(ctx context.Context, id int64, pagination Pagination) ([]string, error)
 	DeleteSong(ctx context.Context, id int64) error
+	UpdateSong(ctx context.Context, id int64, songUpdate SongUpdate) error
 }
 
 type songsController struct {
@@ -59,6 +63,14 @@ type songDTO struct {
 	ReleaseDate httpx.JsonDate `json:"releaseDate"`
 	Lyrics      []string       `json:"text"`
 	Link        string         `json:"link"`
+}
+
+type updateSongDTO struct {
+	Title       *string   `json:"song"`
+	Artist      *string   `json:"group"`
+	ReleaseDate *string   `json:"releaseDate"`
+	Lyrics      *[]string `json:"text"`
+	Link        *string   `json:"link"`
 }
 
 func toDTO(song Song) songDTO {
@@ -170,6 +182,50 @@ func (c *songsController) DeleteSong(w http.ResponseWriter, r *http.Request) {
 	if err := c.songsService.DeleteSong(r.Context(), songId); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		c.log.Debug(r.Context(), "failed to delete song", sl.Err(err))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *songsController) UpdateSong(w http.ResponseWriter, r *http.Request) {
+	songId, err := c.parseSongId(r)
+	if err != nil {
+		c.badRequest(w, r, err)
+		return
+	}
+	u, httpErr := httpx.JSONBody[updateSongDTO](c.log.Logger, c.decoder, w, r)
+	if httpErr != nil {
+		http.Error(w, httpErr.Text, httpErr.Status)
+		return
+	}
+	upd := make(SongUpdate, 5)
+	if u.Title != nil {
+		upd[Title] = *u.Title
+	}
+	if u.Artist != nil {
+		upd[Artist] = *u.Artist
+	}
+	if u.ReleaseDate != nil {
+		time, err := time.Parse(releaseDateFormat, *u.ReleaseDate)
+		if err != nil {
+			c.badRequest(w, r, fmt.Errorf("%w: %v", ErrInvalidDate, err))
+			return
+		}
+		upd[ReleaseDate] = time
+	}
+	if u.Lyrics != nil {
+		upd[Lyrics] = *u.Lyrics
+	}
+	if u.Link != nil {
+		upd[Link] = *u.Link
+	}
+	if len(upd) == 0 {
+		c.badRequest(w, r, ErrNothingToUpdate)
+		return
+	}
+	if err := c.songsService.UpdateSong(r.Context(), songId, upd); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.log.Debug(r.Context(), "failed to update song", sl.Err(err))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
