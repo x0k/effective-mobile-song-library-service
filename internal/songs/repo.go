@@ -21,7 +21,7 @@ type Repo struct {
 	filter  *filter.Filter
 }
 
-func newRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
+func NewRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
 	return &Repo{
 		log:     log,
 		conn:    conn,

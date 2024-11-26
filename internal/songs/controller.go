@@ -29,7 +29,7 @@ type songsController struct {
 	songsService SongsService
 }
 
-func newController(
+func NewController(
 	log *logger.Logger,
 	songsRepo SongsService,
 ) *songsController {
