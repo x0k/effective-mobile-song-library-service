@@ -8,10 +8,19 @@ import (
 )
 
 func TestFilter_Parse(t *testing.T) {
-	filter := New("test", map[string]ValueType{
-		"string_column": StringType,
-		"array_column":  ArrayOf(StringType),
-		"date_column":   DateType,
+	filter := New("test", map[string]ColumnConfig{
+		"string_column": {
+			Name: "string_column",
+			Type: StringType,
+		},
+		"array_column": {
+			Name: "array_column",
+			Type: ArrayOf(StringType),
+		},
+		"date_column": {
+			Name: "date_column",
+			Type: DateType,
+		},
 	}, func(s string) (any, error) {
 		return s, nil
 	})

@@ -18,9 +18,9 @@ import (
 
 var ErrLastIdCannotBeUsedWithPageParameter = errors.New("last id cannot be used with page parameter")
 var ErrFilterIsTooLong = errors.New("filter is too complex")
-var ErrInvalidSongId = errors.New("invalid song id")
 var ErrInvalidDate = errors.New("invalid date")
 var ErrNothingToUpdate = errors.New("nothing to update")
+var ErrInvalidField = errors.New("invalid song field")
 
 type SongsService interface {
 	CreateSong(ctx context.Context, song string, group string) (Song, error)
@@ -91,19 +91,16 @@ func (c *songsController) CreateSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(strings.TrimSpace(createSong.Group)) == 0 {
-		http.Error(w, "group is required", http.StatusBadRequest)
-		c.log.Debug(r.Context(), "group is empty")
+		c.badRequest(w, r, fmt.Errorf("%w: %v", ErrInvalidField, "group"))
 		return
 	}
 	if len(strings.TrimSpace(createSong.Song)) == 0 {
-		http.Error(w, "song is required", http.StatusBadRequest)
-		c.log.Debug(r.Context(), "song is empty")
+		c.badRequest(w, r, fmt.Errorf("%w: %v", ErrInvalidField, "song"))
 		return
 	}
 	song, err := c.songsService.CreateSong(r.Context(), createSong.Song, createSong.Group)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		c.log.Debug(r.Context(), "failed to create song", sl.Err(err))
+		c.serverError(w, r, err, "failed to create song")
 		return
 	}
 	c.json(w, r, toDTO(song), http.StatusCreated)
@@ -112,8 +109,7 @@ func (c *songsController) CreateSong(w http.ResponseWriter, r *http.Request) {
 func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 	rq, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		c.log.Debug(r.Context(), "failed to parse query", sl.Err(err))
+		c.badRequest(w, r, err)
 		return
 	}
 	sq := Query{
@@ -140,8 +136,7 @@ func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 	}
 	songs, err := c.songsService.GetSongs(r.Context(), sq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		c.log.Debug(r.Context(), "failed to get songs", sl.Err(err))
+		c.serverError(w, r, err, "failed to get songs")
 		return
 	}
 	dtos := make([]songDTO, len(songs))
@@ -166,8 +161,7 @@ func (c *songsController) GetLyrics(w http.ResponseWriter, r *http.Request) {
 	}
 	lyrics, err := c.songsService.GetLyrics(r.Context(), songId, Pagination)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		c.log.Debug(r.Context(), "failed to get lyrics", sl.Err(err))
+		c.serverError(w, r, err, "failed to get lyrics")
 		return
 	}
 	c.json(w, r, lyrics, http.StatusOK)
@@ -180,8 +174,7 @@ func (c *songsController) DeleteSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := c.songsService.DeleteSong(r.Context(), songId); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		c.log.Debug(r.Context(), "failed to delete song", sl.Err(err))
+		c.serverError(w, r, err, "failed to delete song")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -224,8 +217,7 @@ func (c *songsController) UpdateSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := c.songsService.UpdateSong(r.Context(), songId, upd); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		c.log.Debug(r.Context(), "failed to update song", sl.Err(err))
+		c.serverError(w, r, err, "failed to update song")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -234,11 +226,11 @@ func (c *songsController) UpdateSong(w http.ResponseWriter, r *http.Request) {
 func (c *songsController) parseSongId(r *http.Request) (int64, error) {
 	songIdStr := r.PathValue("songId")
 	if songIdStr == "" {
-		return 0, ErrInvalidSongId
+		return 0, fmt.Errorf("%w: %v", ErrInvalidField, "songId is empty")
 	}
 	songId, err := strconv.ParseInt(songIdStr, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %v", ErrInvalidSongId, err)
+		return 0, fmt.Errorf("%w: songId %v", ErrInvalidField, err)
 	}
 	return songId, nil
 }
@@ -260,10 +252,13 @@ func (c *songsController) json(w http.ResponseWriter, r *http.Request, data any,
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
-		c.log.Debug(r.Context(), "failed to encode JSON", sl.Err(err))
-		return
+		c.serverError(w, r, err, "failed to encode JSON")
 	}
+}
+
+func (c *songsController) serverError(w http.ResponseWriter, r *http.Request, err error, msg string) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+	c.log.Debug(r.Context(), msg, sl.Err(err))
 }
 
 func (c *songsController) badRequest(w http.ResponseWriter, r *http.Request, err error) {

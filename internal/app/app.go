@@ -51,11 +51,15 @@ func Run(configPath string) {
 		musicInfoClient,
 	)
 
+	sLog := log.With(slog.String("component", "http_server"))
 	srv := http.Server{
 		Addr: cfg.Server.Address,
-		Handler: http_adapters.Logging(
-			log.With(slog.String("component", "http_server")),
-			router,
+		Handler: http_adapters.Recover(
+			sLog,
+			http_adapters.Logging(
+				sLog,
+				router,
+			),
 		),
 	}
 

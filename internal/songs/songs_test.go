@@ -47,7 +47,7 @@ func TestSongs(t *testing.T) {
 	})
 
 	e.GET("/songs").
-		WithQuery("filter", `AND(EQ(artist, "Muse"), ALIKE(lyrics, "%can you hear me%"), EQ(release_date, DATE("16.07.2006")))`).
+		WithQuery("filter", `AND(EQ(group, "Muse"), ALIKE(text, "%can you hear me%"), EQ(releaseDate, DATE("16.07.2006")))`).
 		Expect().
 		Status(http.StatusOK).
 		JSON().IsEqual([]map[string]any{

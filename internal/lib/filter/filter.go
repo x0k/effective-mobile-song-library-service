@@ -51,15 +51,20 @@ var operators = []string{
 	dateOp,
 }
 
+type ColumnConfig struct {
+	Name string
+	Type ValueType
+}
+
 type Filter struct {
 	table       string
-	schema      map[string]ValueType
+	schema      map[string]ColumnConfig
 	dateFactory func(string) (any, error)
 }
 
 func New(
 	table string,
-	schema map[string]ValueType,
+	schema map[string]ColumnConfig,
 	dateFactory func(string) (any, error),
 ) *Filter {
 	return &Filter{
@@ -406,14 +411,14 @@ func (p *Filter) parse(l *lexer.Lexer) (Expr, error) {
 			val:  t.Value,
 		}, nil
 	case lexer.SymbolToken:
-		fieldType, ok := p.schema[t.Value]
+		col, ok := p.schema[t.Value]
 		if !ok {
 			return nil, fmt.Errorf("%w: unknown symbol token %v", ErrInvalidExpression, t)
 		}
 		return Column{
 			node: p.node(t),
-			t:    fieldType,
-			name: t.Value,
+			t:    col.Type,
+			name: col.Name,
 		}, nil
 	case lexer.SeparatorToken:
 		switch t.Value {

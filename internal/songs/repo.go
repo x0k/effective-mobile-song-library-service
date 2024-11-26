@@ -25,13 +25,31 @@ func newRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
 		conn: conn,
 		filter: filter.New(
 			"song",
-			map[string]filter.ValueType{
-				"id":           filter.NumberType,
-				"title":        filter.StringType,
-				"artist":       filter.StringType,
-				"release_date": filter.DateType,
-				"lyrics":       filter.ArrayOf(filter.StringType),
-				"link":         filter.StringType,
+			map[string]filter.ColumnConfig{
+				"id": {
+					Name: "id",
+					Type: filter.NumberType,
+				},
+				"song": {
+					Name: "title",
+					Type: filter.StringType,
+				},
+				"group": {
+					Name: "artist",
+					Type: filter.StringType,
+				},
+				"releaseDate": {
+					Name: "release_date",
+					Type: filter.DateType,
+				},
+				"text": {
+					Name: "lyrics",
+					Type: filter.ArrayOf(filter.StringType),
+				},
+				"link": {
+					Name: "link",
+					Type: filter.StringType,
+				},
 			},
 			func(s string) (any, error) {
 				d, err := time.Parse(releaseDateFormat, s)

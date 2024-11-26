@@ -2,6 +2,7 @@ package http_adapters
 
 import (
 	"net/http"
+	"runtime/debug"
 
 	"log/slog"
 
@@ -31,5 +32,17 @@ func Logging(log *logger.Logger, next http.Handler) http.Handler {
 			slog.String("url", r.RequestURI),
 			slog.Int("status", c.status),
 		)
+	})
+}
+
+func Recover(log *logger.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Error(r.Context(), "panic", slog.String("stack", string(debug.Stack())), slog.Any("error", err))
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
 	})
 }
