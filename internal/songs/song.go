@@ -32,9 +32,13 @@ func NewSong(
 	}
 }
 
-type Query struct {
+type Pagination struct {
 	PageSize uint64
 	Page     uint64
-	LastId   int64
-	Filter   string
+}
+
+type Query struct {
+	Pagination
+	LastId int64
+	Filter string
 }

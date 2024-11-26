@@ -1,7 +1,3 @@
--- name: ListSongs :many
-SELECT * FROM song
-ORDER BY id;
-
 -- name: InsertSongAndReturnId :one
 INSERT INTO
   song (title, artist, release_date, lyrics, link)

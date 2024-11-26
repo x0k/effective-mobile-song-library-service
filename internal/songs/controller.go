@@ -17,16 +17,19 @@ import (
 
 var ErrLastIdCannotBeUsedWithPageParameter = errors.New("last id cannot be used with page parameter")
 var ErrFilterIsTooLong = errors.New("filter is too complex")
+var ErrInvalidSongId = errors.New("invalid song id")
 
 type SongsService interface {
 	CreateSong(ctx context.Context, song string, group string) (Song, error)
 	GetSongs(ctx context.Context, query Query) ([]Song, error)
+	GetLyrics(ctx context.Context, id int64, pagination Pagination) ([]string, error)
 }
 
 type songsController struct {
 	log          *logger.Logger
 	decoder      *httpx.JsonBodyDecoder
 	songsService SongsService
+	maxPageSize  uint64
 }
 
 func newController(
@@ -39,6 +42,7 @@ func newController(
 			MaxBytes: 1 * 1024 * 1024,
 		},
 		songsService: songsRepo,
+		maxPageSize:  100,
 	}
 }
 
@@ -100,17 +104,13 @@ func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sq := Query{
-		PageSize: 100,
+		Pagination: Pagination{
+			PageSize: c.maxPageSize,
+		},
 	}
-	if sq.Page, err = c.parseUint(rq, "page", 64); err != nil {
+	if err = c.parsePagination(&sq.Pagination, rq); err != nil {
 		c.badRequest(w, r, err)
 		return
-	}
-	if pageSize, err := c.parseUint(rq, "pageSize", 64); err != nil {
-		c.badRequest(w, r, err)
-		return
-	} else if pageSize > 0 && pageSize < sq.PageSize {
-		sq.PageSize = pageSize
 	}
 	if lastId, err := c.parseUint(rq, "lastId", 63); err != nil {
 		c.badRequest(w, r, err)
@@ -136,6 +136,46 @@ func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 		dtos[i] = toDTO(song)
 	}
 	c.json(w, r, dtos, http.StatusOK)
+}
+
+func (c *songsController) GetLyrics(w http.ResponseWriter, r *http.Request) {
+	songIdStr := r.PathValue("songId")
+	if songIdStr == "" {
+		c.badRequest(w, r, ErrInvalidSongId)
+		return
+	}
+	songId, err := strconv.ParseInt(songIdStr, 10, 64)
+	if err != nil {
+		c.badRequest(w, r, ErrInvalidSongId)
+		return
+	}
+	Pagination := Pagination{
+		PageSize: c.maxPageSize,
+	}
+	if err := c.parsePagination(&Pagination, r.URL.Query()); err != nil {
+		c.badRequest(w, r, err)
+		return
+	}
+	lyrics, err := c.songsService.GetLyrics(r.Context(), songId, Pagination)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.log.Debug(r.Context(), "failed to get lyrics", sl.Err(err))
+		return
+	}
+	c.json(w, r, lyrics, http.StatusOK)
+}
+
+func (c *songsController) parsePagination(p *Pagination, rq url.Values) error {
+	var err error
+	if p.Page, err = c.parseUint(rq, "page", 64); err != nil {
+		return err
+	}
+	if pageSize, err := c.parseUint(rq, "pageSize", 64); err != nil {
+		return err
+	} else if pageSize > 0 && pageSize < p.PageSize {
+		p.PageSize = pageSize
+	}
+	return nil
 }
 
 func (c *songsController) json(w http.ResponseWriter, r *http.Request, data any, status int) {

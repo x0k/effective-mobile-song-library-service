@@ -17,6 +17,7 @@ var ErrFailedToSaveSong = errors.New("failed to save song")
 type SongsRepo interface {
 	SaveSong(ctx context.Context, song *Song) error
 	GetSongs(ctx context.Context, query Query) ([]Song, error)
+	GetLyrics(ctx context.Context, id int64, pagination Pagination) ([]string, error)
 }
 
 type songsService struct {
@@ -65,4 +66,8 @@ func (s *songsService) CreateSong(ctx context.Context, title string, artist stri
 
 func (s *songsService) GetSongs(ctx context.Context, query Query) ([]Song, error) {
 	return s.songsRepo.GetSongs(ctx, query)
+}
+
+func (s *songsService) GetLyrics(ctx context.Context, id int64, pagination Pagination) ([]string, error) {
+	return s.songsRepo.GetLyrics(ctx, id, pagination)
 }

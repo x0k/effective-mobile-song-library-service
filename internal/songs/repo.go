@@ -113,3 +113,15 @@ func (s *Repo) GetSongs(ctx context.Context, query Query) ([]Song, error) {
 	s.log.Debug(ctx, "got songs", slog.Int("count", len(songs)))
 	return songs, nil
 }
+
+const lyricsQuery = `SELECT lyrics[$1:$2] AS paginated FROM song WHERE id = $3`
+
+func (s *Repo) GetLyrics(ctx context.Context, id int64, pagination Pagination) ([]string, error) {
+	args := []any{pagination.Page, pagination.Page + pagination.PageSize - 1, id}
+	s.log.Debug(ctx, "executing query", slog.String("query", lyricsQuery), slog.Any("args", args))
+	row := s.conn.QueryRow(ctx, lyricsQuery, args...)
+	var lyrics []string
+	err := row.Scan(&lyrics)
+	s.log.Debug(ctx, "got lyrics", slog.Int("count", len(lyrics)))
+	return lyrics, err
+}

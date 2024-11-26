@@ -63,4 +63,13 @@ func TestSongs(t *testing.T) {
 			"link": "https://www.youtube.com/watch?v=Xsp3_a-PMTw",
 		},
 	})
+
+	e.GET("/songs/1/lyrics").
+		WithQuery("page", "2").
+		WithQuery("pageSize", "1").
+		Expect().
+		Status(http.StatusOK).
+		JSON().IsEqual([]string{
+		"Ooh\nYou set my soul alight\nOoh\nYou set my soul alight",
+	})
 }
