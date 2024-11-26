@@ -9,23 +9,20 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/x0k/effective-mobile-song-library-service/internal/lib/db"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/filter"
 	"github.com/x0k/effective-mobile-song-library-service/internal/lib/logger"
 )
 
 type Repo struct {
-	log     *logger.Logger
-	conn    *pgx.Conn
-	queries *db.Queries
-	filter  *filter.Filter
+	log    *logger.Logger
+	conn   *pgx.Conn
+	filter *filter.Filter
 }
 
 func newRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
 	return &Repo{
-		log:     log,
-		conn:    conn,
-		queries: db.New(conn),
+		log:  log,
+		conn: conn,
 		filter: filter.New(
 			"song",
 			map[string]filter.ValueType{
@@ -47,19 +44,13 @@ func newRepo(log *logger.Logger, conn *pgx.Conn) *Repo {
 	}
 }
 
+const saveSongQuery = `INSERT INTO song (title, artist, release_date, lyrics, link) VALUES ($1, $2, $3, $4, $5) RETURNING id;`
+
 func (s *Repo) SaveSong(ctx context.Context, song *Song) error {
-	id, err := s.queries.InsertSongAndReturnId(ctx, db.InsertSongAndReturnIdParams{
-		Title:       song.Title,
-		Artist:      song.Artist,
-		ReleaseDate: pgtype.Date{Time: song.ReleaseDate, Valid: true},
-		Lyrics:      song.Lyrics,
-		Link:        song.Link,
-	})
-	if err != nil {
-		return err
-	}
-	song.ID = id
-	return nil
+	args := []any{song.Title, song.Artist, pgtype.Date{Time: song.ReleaseDate, Valid: true}, song.Lyrics, song.Link}
+	s.log.Debug(ctx, "executing query", slog.String("query", saveSongQuery), slog.Any("args", args))
+	row := s.conn.QueryRow(ctx, saveSongQuery, args...)
+	return row.Scan(&song.ID)
 }
 
 func (s *Repo) GetSongs(ctx context.Context, query Query) ([]Song, error) {

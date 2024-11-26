@@ -4,11 +4,8 @@ set -xe
 d:
   go run cmd/app/main.go
 
-db:
-  sqlc generate
-
 migration:
-  migrate create -ext sql -dir db/migrations -seq $1
+  migrate create -ext sql -dir migrations -seq $1
 
 client:
   mkdir -p lib/music_info

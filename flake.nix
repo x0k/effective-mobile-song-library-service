@@ -22,7 +22,6 @@
             pkgs.air
             pkgs.go-migrate
             pkgs.golangci-lint
-            pkgs.sqlc
             pkgs.oapi-codegen
             pkgs.gotests
             pkgs.delve

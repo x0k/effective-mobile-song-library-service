@@ -36,7 +36,7 @@ func SetupPgx(ctx context.Context, log *slog.Logger, t testing.TB) *pgx.Conn {
 		t.Fatal(err)
 	}
 
-	if err := pgx_adapter.Migrate(ctx, log, uri, "file://../../db/migrations"); err != nil {
+	if err := pgx_adapter.Migrate(ctx, log, uri, "file://../../migrations"); err != nil {
 		t.Fatal(err)
 	}
 	conn, err := pgx.Connect(ctx, uri)

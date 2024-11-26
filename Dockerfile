@@ -17,7 +17,7 @@ FROM alpine:3.20.0
 WORKDIR /app
 
 COPY --from=builder /app/app .
-COPY ./db/migrations ./migrations
+COPY ./migrations ./migrations
 ENV PG_MIGRATIONS_URI=file://migrations
 
 ENTRYPOINT [ "./app" ]

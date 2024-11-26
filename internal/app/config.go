@@ -18,7 +18,7 @@ type MusicInfoServiceConfig struct {
 
 type PgConfig struct {
 	ConnectionURI string `env:"PG_CONNECTION_URI" env-required:"true"`
-	MigrationsURI string `env:"PG_MIGRATIONS_URI" env-default:"file://db/migrations"`
+	MigrationsURI string `env:"PG_MIGRATIONS_URI" env-default:"file://migrations"`
 }
 
 type ServerConfig struct {
