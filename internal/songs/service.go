@@ -14,24 +14,27 @@ var ErrFailedToGetInfo = errors.New("failed to get info")
 var ErrFailedToParseReleaseDate = errors.New("failed to parse release date")
 var ErrFailedToSaveSong = errors.New("failed to save song")
 
-type SongSaver = func(ctx context.Context, song *Song) error
+type SongsRepo interface {
+	SaveSong(ctx context.Context, song *Song) error
+	GetSongs(ctx context.Context, query Query) ([]Song, error)
+}
 
-type SongsService struct {
+type songsService struct {
 	musicInfo music_info.ClientWithResponsesInterface
-	saveSong  SongSaver
+	songsRepo SongsRepo
 }
 
 func newService(
 	musicInfo music_info.ClientWithResponsesInterface,
-	songSaver SongSaver,
-) *SongsService {
-	return &SongsService{
+	songsRepo SongsRepo,
+) *songsService {
+	return &songsService{
 		musicInfo: musicInfo,
-		saveSong:  songSaver,
+		songsRepo: songsRepo,
 	}
 }
 
-func (s *SongsService) CreateSong(ctx context.Context, title string, artist string) (Song, error) {
+func (s *songsService) CreateSong(ctx context.Context, title string, artist string) (Song, error) {
 	r, err := s.musicInfo.GetInfoWithResponse(ctx, &music_info.GetInfoParams{
 		Group: artist,
 		Song:  title,
@@ -54,8 +57,12 @@ func (s *SongsService) CreateSong(ctx context.Context, title string, artist stri
 		lyrics,
 		r.JSON200.Link,
 	)
-	if err := s.saveSong(ctx, &song); err != nil {
+	if err := s.songsRepo.SaveSong(ctx, &song); err != nil {
 		return Song{}, fmt.Errorf("%w: %v", ErrFailedToSaveSong, err)
 	}
 	return song, nil
+}
+
+func (s *songsService) GetSongs(ctx context.Context, query Query) ([]Song, error) {
+	return s.songsRepo.GetSongs(ctx, query)
 }

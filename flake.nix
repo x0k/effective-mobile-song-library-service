@@ -24,6 +24,9 @@
             pkgs.golangci-lint
             pkgs.sqlc
             pkgs.oapi-codegen
+            pkgs.gotests
+            pkgs.delve
+            pkgs.postgresql_17
           ];
           shellHook = ''
             source <(COMPLETE=bash mk)

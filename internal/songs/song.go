@@ -1,6 +1,10 @@
 package songs
 
-import "time"
+import (
+	"time"
+)
+
+const releaseDateFormat = "02.01.2006"
 
 type Song struct {
 	ID          int64
@@ -26,4 +30,11 @@ func NewSong(
 		Lyrics:      lyrics,
 		Link:        link,
 	}
+}
+
+type Query struct {
+	PageSize uint64
+	Page     uint64
+	LastId   int64
+	Filter   string
 }

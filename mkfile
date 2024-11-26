@@ -19,3 +19,6 @@ t:
 
 lint:
   golangci-lint run ./...
+
+sql:
+  psql -h localhost -p $1 -U test -d songs

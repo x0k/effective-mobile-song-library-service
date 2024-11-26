@@ -26,15 +26,22 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	songsRepo := newRepo(pgx)
+
+	songsRepo := newRepo(
+		log.With(slog.String("component", "songs_repo")),
+		pgx,
+	)
+
 	songsService := newService(
 		musicInfoClient,
-		songsRepo.SaveSong,
+		songsRepo,
 	)
+
 	songsController := newController(
 		log.With(slog.String("component", "songs_controller")),
-		songsService.CreateSong,
+		songsService,
 	)
+
 	srv := &http.Server{
 		Addr: songsServerAddress,
 		Handler: http_adapters.Logging(
