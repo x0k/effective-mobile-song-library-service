@@ -51,6 +51,8 @@ var operators = []string{
 	dateOp,
 }
 
+var operatorsTrie = lexer.OperatorsTrie(operators)
+
 type ColumnConfig struct {
 	Name string
 	Type ValueType
@@ -75,7 +77,7 @@ func New(
 }
 
 func (p *Filter) Parse(str string) (Expr, error) {
-	l := lexer.New(operators, separators, str)
+	l := lexer.New(operatorsTrie, separators, str)
 	expr, err := p.parse(l)
 	if err != nil {
 		return nil, err

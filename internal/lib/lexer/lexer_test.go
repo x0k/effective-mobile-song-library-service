@@ -103,7 +103,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:      "operator to symbol",
-			tokenizer: New([]string{"!=="}, nil, "!=! !="),
+			tokenizer: NewWithOperators([]string{"!=="}, nil, "!=! !="),
 			tokens: []Token{
 				SymbolToken{token: token{Pos: 0}, Value: "!=!"},
 				SymbolToken{token: token{Pos: 4}, Value: "!="},
@@ -111,7 +111,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:      "operator overlap",
-			tokenizer: New([]string{"as", "assert"}, []rune{','}, "123 as 10 assert,as"),
+			tokenizer: NewWithOperators([]string{"as", "assert"}, []rune{','}, "123 as 10 assert,as"),
 			tokens: []Token{
 				NumberToken{token: token{Pos: 0}, Value: 123},
 				OperatorToken{token: token{Pos: 4}, Value: 0},

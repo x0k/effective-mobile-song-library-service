@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"unicode"
+
+	"github.com/x0k/effective-mobile-song-library-service/internal/lib/trie"
 )
 
 var (
@@ -101,44 +103,50 @@ type Lexer struct {
 	strLen     int
 	cursor     int
 	separators map[rune]struct{}
-	operators  [][]rune
+	operators  *trie.Node[rune, int]
 	strQuote   rune
 
-	done        bool
-	err         error
-	token       Token
-	state       state
-	pos         int
-	buff        []rune
-	escaped     bool
-	indexes     []int
-	nextIndexes []int
+	done    bool
+	err     error
+	token   Token
+	state   state
+	pos     int
+	buff    []rune
+	escaped bool
+	node    *trie.Node[rune, int]
+}
+
+func NewWithOperators(operators []string, separators []rune, str string) *Lexer {
+	return New(OperatorsTrie(operators), separators, str)
+}
+
+func OperatorsTrie(
+	operators []string,
+) *trie.Node[rune, int] {
+	var t *trie.Node[rune, int]
+	for i, k := range operators {
+		t = trie.Insert(t, []rune(k), i+1)
+	}
+	return t
 }
 
 func New(
-	operators []string,
+	operatorTrie *trie.Node[rune, int],
 	separators []rune,
 	str string,
 ) *Lexer {
-	il := len(operators)
-	rInstructions := make([][]rune, il)
-	for i, k := range operators {
-		rInstructions[i] = []rune(k)
-	}
 	sMap := make(map[rune]struct{}, len(separators))
 	for _, sep := range separators {
 		sMap[sep] = struct{}{}
 	}
 	sl := len(str)
 	return &Lexer{
-		str:         []rune(str),
-		strLen:      sl,
-		done:        sl == 0,
-		operators:   rInstructions,
-		separators:  sMap,
-		strQuote:    '"',
-		indexes:     make([]int, 0, il),
-		nextIndexes: make([]int, 0, il),
+		str:        []rune(str),
+		strLen:     sl,
+		done:       sl == 0,
+		operators:  operatorTrie,
+		separators: sMap,
+		strQuote:   '"',
 	}
 }
 
@@ -195,8 +203,6 @@ func (l *Lexer) Err() error {
 func (l *Lexer) idle() {
 	l.state = idle
 	l.buff = l.buff[:0]
-	l.indexes = l.indexes[:0]
-	l.nextIndexes = l.nextIndexes[:0]
 }
 
 func (l *Lexer) advance() {
@@ -218,7 +224,7 @@ func (l *Lexer) process() bool {
 		} else if unicode.IsDigit(c) {
 			l.err = l.startNum(c)
 		} else if l.isOperator(c) {
-			l.err = l.startOperator()
+			l.err = l.startOperator(c)
 		} else if !unicode.IsSpace(c) {
 			l.err = l.startSymbol(c)
 		}
@@ -251,8 +257,8 @@ func (l *Lexer) process() bool {
 		l.err = l.numToSymbol(c)
 		return true
 	case operatorToken:
-		if l.isOperatorContinuation(c) {
-			l.err = l.continueOperator()
+		if n := l.isOperatorContinuation(c); n != nil {
+			l.err = l.continueOperator(n, c)
 			return true
 		}
 		if unicode.IsSpace(c) {
@@ -345,78 +351,41 @@ func (l *Lexer) setNumberToken() error {
 }
 
 func (l *Lexer) isOperator(c rune) bool {
-	for i, instr := range l.operators {
-		if instr[0] == c {
-			l.indexes = append(l.indexes, i)
-		}
-	}
-	return len(l.indexes) > 0
+	l.node = trie.GetNode(l.operators, c)
+	return l.node != nil
 }
 
-func (l *Lexer) startOperator() error {
+func (l *Lexer) startOperator(c rune) error {
 	l.state = operatorToken
 	l.pos = l.cursor
-	l.nextIndexes = l.nextIndexes[:len(l.indexes)]
-	return nil
-}
-
-func (l *Lexer) isOperatorContinuation(c rune) bool {
-	shift := 0
-	charIdx := l.cursor - l.pos
-	for i, idx := range l.indexes {
-		if charIdx >= len(l.operators[idx]) || l.operators[idx][charIdx] != c {
-			shift++
-		} else {
-			l.nextIndexes[i-shift] = l.indexes[i]
-		}
-	}
-	l.nextIndexes = l.nextIndexes[:len(l.indexes)-shift]
-	return len(l.nextIndexes) > 0
-}
-
-func (l *Lexer) continueOperator() error {
-	copy(l.indexes, l.nextIndexes)
-	l.indexes = l.indexes[:len(l.nextIndexes)]
-	return nil
-}
-
-func (l *Lexer) operatorToBuffer() {
-	l.state = symbolToken
-	ln := l.cursor - l.pos
-	if cap(l.buff) < ln {
-		l.buff = make([]rune, ln)
-	} else {
-		l.buff = l.buff[:ln]
-	}
-	copy(l.buff, l.operators[l.indexes[0]][:ln])
-}
-
-func (l *Lexer) operatorToSymbol(c rune) error {
-	l.operatorToBuffer()
 	l.buff = append(l.buff, c)
 	return nil
 }
 
-func (l *Lexer) findOperatorIndex() int {
-	ln := l.cursor - l.pos
-	for _, idx := range l.indexes {
-		if len(l.operators[idx]) == ln {
-			return idx
-		}
-	}
-	return -1
+func (l *Lexer) isOperatorContinuation(c rune) *trie.Node[rune, int] {
+	return trie.GetNode(l.node, c)
+}
+
+func (l *Lexer) continueOperator(node *trie.Node[rune, int], c rune) error {
+	l.node = node
+	l.buff = append(l.buff, c)
+	return nil
+}
+
+func (l *Lexer) operatorToSymbol(c rune) error {
+	l.buff = append(l.buff, c)
+	return nil
 }
 
 func (l *Lexer) setOperatorToken() {
-	idx := l.findOperatorIndex()
-	if idx == -1 {
-		l.operatorToBuffer()
+	idx := l.node.Value
+	if idx == 0 {
 		l.setSymbolToken()
 		return
 	}
 	l.token = OperatorToken{
 		token: newToken(l),
-		Value: idx,
+		Value: idx - 1,
 	}
 }
 
