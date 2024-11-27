@@ -19,13 +19,13 @@
           buildInputs = [
             mk.packages.${system}.default
             pkgs.go
-            pkgs.air
             pkgs.go-migrate
             pkgs.golangci-lint
             pkgs.oapi-codegen
             pkgs.gotests
             pkgs.delve
             pkgs.postgresql_17
+            pkgs.go-swag
           ];
           shellHook = ''
             source <(COMPLETE=bash mk)

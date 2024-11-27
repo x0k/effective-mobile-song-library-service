@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"log/slog"
 )
@@ -111,20 +110,4 @@ func JSONBody[T any](
 		return dst, mr
 	}
 	return dst, nil
-}
-
-type JsonDate struct {
-	time.Time
-	format string
-}
-
-func NewJsonDate(t time.Time, format string) JsonDate {
-	return JsonDate{
-		Time:   t,
-		format: format,
-	}
-}
-
-func (d JsonDate) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.Format(d.format))
 }

@@ -17,6 +17,8 @@ import (
 	"github.com/x0k/effective-mobile-song-library-service/internal/songs"
 )
 
+// @title           Effective Mobile Song Library Service
+// @version         0.0.1
 func Run(configPath string) {
 	cfg := mustLoadConfig(configPath)
 	log := mustNewLogger(&cfg.Logger)

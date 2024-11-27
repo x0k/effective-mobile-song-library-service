@@ -57,12 +57,12 @@ type createSongDTO struct {
 }
 
 type songDTO struct {
-	ID          int64          `json:"id"`
-	Title       string         `json:"song"`
-	Artist      string         `json:"group"`
-	ReleaseDate httpx.JsonDate `json:"releaseDate"`
-	Lyrics      []string       `json:"text"`
-	Link        string         `json:"link"`
+	ID          int64    `json:"id"`
+	Title       string   `json:"song"`
+	Artist      string   `json:"group"`
+	ReleaseDate string   `json:"releaseDate"`
+	Lyrics      []string `json:"text"`
+	Link        string   `json:"link"`
 }
 
 type updateSongDTO struct {
@@ -78,12 +78,22 @@ func toDTO(song Song) songDTO {
 		ID:          song.ID,
 		Title:       song.Title,
 		Artist:      song.Artist,
-		ReleaseDate: httpx.NewJsonDate(song.ReleaseDate, releaseDateFormat),
+		ReleaseDate: song.ReleaseDate.Format(releaseDateFormat),
 		Lyrics:      song.Lyrics,
 		Link:        song.Link,
 	}
 }
 
+// CreateSong godoc
+// @Summary      Create song
+// @Tags         songs
+// @Accept       json
+// @Produce      json
+// @Param        payload body createSongDTO true "Song data"
+// @Success      201  {object}  songDTO
+// @Failure      400  {string}  string
+// @Failure      500  {string}  string
+// @Router       /songs [post]
 func (c *songsController) CreateSong(w http.ResponseWriter, r *http.Request) {
 	createSong, httpErr := httpx.JSONBody[createSongDTO](c.log.Logger, c.decoder, w, r)
 	if httpErr != nil {
@@ -106,6 +116,18 @@ func (c *songsController) CreateSong(w http.ResponseWriter, r *http.Request) {
 	c.json(w, r, toDTO(song), http.StatusCreated)
 }
 
+// GetSongs godoc
+// @Summary      Get songs
+// @Tags         songs
+// @Produce      json
+// @Param        page     query  uint64  false  "Page number"
+// @Param        pageSize query  uint64  false  "Page size"
+// @Param        lastId   query  int64   false  "Last song id"
+// @Param        filter   query  string  false  "Filter"
+// @Success      200  {array}  songDTO
+// @Failure      400  {string}  string
+// @Failure      500  {string}  string
+// @Router       /songs [get]
 func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 	rq, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
@@ -146,6 +168,17 @@ func (c *songsController) GetSongs(w http.ResponseWriter, r *http.Request) {
 	c.json(w, r, dtos, http.StatusOK)
 }
 
+// GetLyrics godoc
+// @Summary      Get lyrics
+// @Tags         songs
+// @Produce      json
+// @Param        songId   path   int64   true   "Song id"
+// @Param        page     query  uint64  false  "Page number"
+// @Param        pageSize query  uint64  false  "Page size"
+// @Success      200  {array}   string
+// @Failure      400  {string}  string
+// @Failure      500  {string}  string
+// @Router       /songs/{songId}/lyrics [get]
 func (c *songsController) GetLyrics(w http.ResponseWriter, r *http.Request) {
 	songId, err := c.parseSongId(r)
 	if err != nil {
@@ -167,6 +200,14 @@ func (c *songsController) GetLyrics(w http.ResponseWriter, r *http.Request) {
 	c.json(w, r, lyrics, http.StatusOK)
 }
 
+// DeleteSong godoc
+// @Summary      Delete song
+// @Tags         songs
+// @Param        songId   path   int64   true   "Song id"
+// @Success      204  {string}  string
+// @Failure      400  {string}  string
+// @Failure      500  {string}  string
+// @Router       /songs/{songId} [delete]
 func (c *songsController) DeleteSong(w http.ResponseWriter, r *http.Request) {
 	songId, err := c.parseSongId(r)
 	if err != nil {
@@ -180,6 +221,16 @@ func (c *songsController) DeleteSong(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateSong godoc
+// @Summary      Update song
+// @Tags         songs
+// @Accept       json
+// @Param        songId  path   int64         true "Song id"
+// @Param        payload body   updateSongDTO true "Song data"
+// @Success      204  {string}  string
+// @Failure      400  {string}  string
+// @Failure      500  {string}  string
+// @Router       /songs/{songId} [patch]
 func (c *songsController) UpdateSong(w http.ResponseWriter, r *http.Request) {
 	songId, err := c.parseSongId(r)
 	if err != nil {
